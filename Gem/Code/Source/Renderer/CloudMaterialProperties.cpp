@@ -16,7 +16,7 @@ namespace VolumetricClouds
 {
     AZ_CLASS_ALLOCATOR_IMPL(CloudMaterialProperties, AZ::SystemAllocator);
     AZ_TYPE_INFO_WITH_NAME_IMPL(CloudMaterialProperties, "VolumetricClouds::CloudMaterialProperties", CloudMaterialPropertiesTypeId);
-    AZ_RTTI_NO_TYPE_INFO_IMPL(CloudMaterialProperties);
+//    AZ_RTTI_NO_TYPE_INFO_IMPL(CloudMaterialProperties);
 
     static AZStd::string CloudMaterialPropertiesToString(const CloudMaterialProperties& cmp)
     {

@@ -18,7 +18,8 @@
 #include <VolumetricClouds/CloudTextureProviderBus.h>
 #include <Renderer/CloudscapeShaderConstantData.h>
 
-namespace AZ::RPI {
+namespace AZ::RPI
+{
     class Scene;
 }
 
@@ -34,7 +35,8 @@ namespace VolumetricClouds
     public:
         AZ_RTTI(CloudscapeComponentConfig, "{6E894FEA-BAE8-4089-B76D-B082C4A5B394}", AZ::ComponentConfig);
         AZ_CLASS_ALLOCATOR(CloudscapeComponentConfig, AZ::SystemAllocator);
-    
+
+        virtual ~CloudscapeComponentConfig() = default;
         static void Reflect(AZ::ReflectContext* context);
         
         // Typically a 128x128x128 texture3D

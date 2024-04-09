@@ -1,14 +1,14 @@
 /*
-* Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
-*
-* SPDX-License-Identifier: Apache-2.0 OR MIT
-*
-*/
+ * Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
+ *
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
+ *
+ */
 #pragma once
 
 #include <AzCore/EBus/EBus.h>
 #include <AzCore/Interface/Interface.h>
-
+#include <AzCore/Math/Color.h>
 #include <VolumetricClouds/VolumetricCloudsTypeIds.h>
 
 namespace VolumetricClouds
@@ -59,17 +59,15 @@ namespace VolumetricClouds
         virtual void SetWindVelocity(const AZ::Vector3& velocity) = 0;
         virtual float GetCloudTopShiftKm() = 0;
         virtual void SetCloudTopShiftKm(float topShiftKm) = 0;
-        // Cloud Material Properties 
+        // Cloud Material Properties
         virtual const CloudMaterialProperties& GetCloudMaterialProperties() = 0;
         virtual void SetCloudMaterialProperties(const CloudMaterialProperties& cmp) = 0;
 
         // Submits the current state of the parameters to the renderer.
         virtual void EndCallBatch() = 0;
-
     };
 
-    class VolumetricCloudsBusTraits
-        : public AZ::EBusTraits
+    class VolumetricCloudsBusTraits : public AZ::EBusTraits
     {
     public:
         //////////////////////////////////////////////////////////////////////////

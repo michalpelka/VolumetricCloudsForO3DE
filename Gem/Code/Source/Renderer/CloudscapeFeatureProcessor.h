@@ -1,35 +1,40 @@
 /*
-* Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
-*
-* SPDX-License-Identifier: Apache-2.0 OR MIT
-*
-*/
+ * Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
+ *
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
+ *
+ */
 
 #pragma once
 
 #include <Atom/RPI.Reflect/Image/StreamingImageAsset.h>
 
 #include <Atom/RPI.Public/Buffer/Buffer.h>
+#include <Atom/RPI.Public/FeatureProcessor.h>
+#include <Atom/RPI.Public/Pass/ComputePass.h>
 #include <Atom/RPI.Public/PipelineState.h>
 #include <Atom/RPI.Public/Shader/ShaderResourceGroup.h>
 #include <Atom/RPI.Public/ViewportContextBus.h>
-#include <Atom/RPI.Public/FeatureProcessor.h>
-#include <Atom/RPI.Public/Pass/ComputePass.h>
 
 #include <Renderer/CloudTexturePresentationData.h>
-#include <Renderer/Passes/CloudTextureComputeData.h>
 #include <Renderer/CloudscapeShaderConstantData.h>
+#include <Renderer/Passes/CloudTextureComputeData.h>
 
-class AZ::RPI::Scene;
+namespace AZ::RPI
+{
+    class Scene;
+}
 
 namespace VolumetricClouds
 {
-    class CloudscapeFeatureProcessor final
-        : public AZ::RPI::FeatureProcessor
+    class CloudscapeComputePass;
+    class CloudscapeRenderPass;
+
+    class CloudscapeFeatureProcessor final : public AZ::RPI::FeatureProcessor
     {
     public:
-        AZ_CLASS_ALLOCATOR(CloudscapeFeatureProcessor, AZ::SystemAllocator)
-            AZ_RTTI(CloudscapeFeatureProcessor, "{B644679D-5585-4335-92C3-DFE0DD6AA186}", AZ::RPI::FeatureProcessor);
+        AZ_CLASS_ALLOCATOR(CloudscapeFeatureProcessor, AZ::SystemAllocator);
+        AZ_RTTI(CloudscapeFeatureProcessor, "{B644679D-5585-4335-92C3-DFE0DD6AA186}", AZ::RPI::FeatureProcessor);
 
         static void Reflect(AZ::ReflectContext* context);
 
@@ -43,18 +48,24 @@ namespace VolumetricClouds
 
         friend class CloudscapeComputePass;
         friend class CloudscapeRenderPass;
-        //friend class DepthBufferCopyPass;
+        // friend class DepthBufferCopyPass;
 
         static constexpr char LogName[] = "CloudscapeFeatureProcessor";
 
         void ActivateInternal();
 
-        AZ::Data::Instance<AZ::RPI::AttachmentImage> CreateCloudscapeOutputAttachment(const AZ::Name& attachmentName
-            , const AzFramework::WindowSize attachmentSize) const;
+        AZ::Data::Instance<AZ::RPI::AttachmentImage> CreateCloudscapeOutputAttachment(
+            const AZ::Name& attachmentName, const AzFramework::WindowSize attachmentSize) const;
 
         // Call by the passes owned by this feature processor.
-        AZ::Data::Instance<AZ::RPI::AttachmentImage> GetOutput0ImageAttachment() { return m_cloudOutput0; }
-        AZ::Data::Instance<AZ::RPI::AttachmentImage> GetOutput1ImageAttachment() { return m_cloudOutput1; }
+        AZ::Data::Instance<AZ::RPI::AttachmentImage> GetOutput0ImageAttachment()
+        {
+            return m_cloudOutput0;
+        }
+        AZ::Data::Instance<AZ::RPI::AttachmentImage> GetOutput1ImageAttachment()
+        {
+            return m_cloudOutput1;
+        }
 
         //////////////////////////////////////////////////////////////////
         //! AZ::RPI::FeatureProcessor overrides START...
@@ -79,7 +90,7 @@ namespace VolumetricClouds
         // This causes visible artifacts at the borders of moving objects. The solution is that if
         // in the current frame a pixel is one of those non-raymarched pixels, and it is visible now, but was not visible
         // in the previous frame then we can choose to ray march it, or interpolate it.
-        AZ::Data::Instance<AZ::RPI::AttachmentImage> m_previousFrameDepthBuffer; 
+        AZ::Data::Instance<AZ::RPI::AttachmentImage> m_previousFrameDepthBuffer;
 
         // We keep track of the number of rendered frames so we can do the modulo 16 and pass
         // the counter to the Cloudscape passes so they know who is the current frame and who is the
@@ -98,6 +109,6 @@ namespace VolumetricClouds
 
         ////////////////////////////////////////////////////
 
-        AzFramework::WindowSize m_viewportSize{0,0};
+        AzFramework::WindowSize m_viewportSize{ 0, 0 };
     };
 } // namespace VolumetricClouds

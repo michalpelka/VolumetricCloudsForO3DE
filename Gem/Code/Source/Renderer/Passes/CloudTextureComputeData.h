@@ -27,7 +27,7 @@ namespace VolumetricClouds
     {
         AZ_CLASS_ALLOCATOR_DECL;
         AZ_TYPE_INFO_WITH_NAME_DECL(CloudTextureComputeData);
-        AZ_RTTI_NO_TYPE_INFO_DECL();
+//        AZ_RTTI_NO_TYPE_INFO_DECL();
 
         static void Reflect(AZ::ReflectContext* reflection);
 

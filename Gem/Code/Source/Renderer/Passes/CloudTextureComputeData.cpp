@@ -16,7 +16,7 @@ namespace VolumetricClouds
 {
     AZ_CLASS_ALLOCATOR_IMPL(CloudTextureComputeData, AZ::SystemAllocator);
     AZ_TYPE_INFO_WITH_NAME_IMPL(CloudTextureComputeData, "VolumetricClouds::CloudTextureComputeData", CloudTextureComputeDataTypeId);
-    AZ_RTTI_NO_TYPE_INFO_IMPL(CloudTextureComputeData);
+//    AZ_RTTI_NO_TYPE_INFO_IMPL(CloudTextureComputeData);
 
     void CloudTextureComputeData::Reflect(AZ::ReflectContext* context)
     {

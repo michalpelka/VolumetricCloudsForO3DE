@@ -1,11 +1,9 @@
 /*
-* Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
-*
-* SPDX-License-Identifier: Apache-2.0 OR MIT
-*
-*/
-
-#pragma once
+ * Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
+ *
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
+ *
+ */
 
 #include <AzCore/Console/Console.h>
 
@@ -15,16 +13,14 @@
 
 namespace VolumetricClouds
 {
-    DdsCloudTextureWriter::DdsCloudTextureWriter(uint16_t mipLevels, AZ::RHI::Format pixelFormat, const AZ::IO::Path& outputDir, const AZStd::string& stemPrefix)
+    DdsCloudTextureWriter::DdsCloudTextureWriter(
+        uint16_t mipLevels, AZ::RHI::Format pixelFormat, const AZ::IO::Path& outputDir, const AZStd::string& stemPrefix)
         : ICloudTextureWriter(mipLevels, pixelFormat, outputDir, stemPrefix)
     {
-
     }
-
 
     DdsCloudTextureWriter::~DdsCloudTextureWriter()
     {
-
     }
 
     // Number of bytes per row.
@@ -36,11 +32,11 @@ namespace VolumetricClouds
         return ((width * AZ::RHI::GetFormatSize(pixelFormat) * BitsInAByte) + (BitsInAByte - 1)) / BitsInAByte;
     }
 
-    static uint32_t  DdsCalculateMipSizeInBytes(const AZ::RHI::Size& mipSize, AZ::RHI::Format pixelFormat)
+    static uint32_t DdsCalculateMipSizeInBytes(const AZ::RHI::Size& mipSize, AZ::RHI::Format pixelFormat)
     {
         const uint32_t rowPitch = DdsCalculateRowSizeForWidth(mipSize.m_width, pixelFormat);
         const uint32_t depthSliceSize = rowPitch * mipSize.m_height;
-        return  depthSliceSize * mipSize.m_depth;
+        return depthSliceSize * mipSize.m_depth;
     }
 
     uint32_t DdsCloudTextureWriter::CalculatePixelBufferSize()
@@ -49,7 +45,7 @@ namespace VolumetricClouds
         uint32_t totalBufferSize = 0;
         for (uint16_t mipIdx = 0; mipIdx < GetMipLevels(); mipIdx++)
         {
-            const auto & mipLevelData = GetMipLevelDataList()[mipIdx];
+            const auto& mipLevelData = GetMipLevelDataList()[mipIdx];
             totalBufferSize += DdsCalculateMipSizeInBytes(mipLevelData.m_mipSize, GetPixelFormat());
         }
         return totalBufferSize;
@@ -98,7 +94,7 @@ namespace VolumetricClouds
             currentPixelPtr += mipLevelData.m_dataBuffer->size();
         }
 
-        const auto & mipLevel0Data = GetMipLevelDataList()[0];
+        const auto& mipLevel0Data = GetMipLevelDataList()[0];
         // We have everything we need to create the one and only DDS File.
         AZ::DdsFile::DdsFileData ddsFileData;
         ddsFileData.m_size = mipLevel0Data.m_mipSize;

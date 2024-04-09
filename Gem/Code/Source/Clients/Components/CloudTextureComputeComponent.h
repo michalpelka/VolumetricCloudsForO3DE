@@ -22,7 +22,8 @@ namespace VolumetricClouds
     
         CloudTextureComputeComponent() = default;
         CloudTextureComputeComponent(const CloudTextureComputeComponentConfig& config);
-    
+
+        virtual ~CloudTextureComputeComponent() = default;
         static void Reflect(AZ::ReflectContext* context);
     };
 } // namespace VolumetricClouds

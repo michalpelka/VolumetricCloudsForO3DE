@@ -9,9 +9,9 @@
 
 #include <VolumetricClouds/VolumetricCloudsBus.h>
 #include "EditorCloudscapeComponent.h"
-
+#include <AzToolsFramework/UI/UICore/WidgetHelpers.h>
 AZ_PUSH_DISABLE_WARNING(4251 4800, "-Wunknown-warning-option") // disable warnings spawned by QT
-#include <QApplication.h>
+
 #include <QMessageBox>
 AZ_POP_DISABLE_WARNING
 
@@ -61,10 +61,8 @@ namespace VolumetricClouds
                 // We only allow one of these components per level.
                 QString msg("Only one Volumetric Cloudscape component is allowed per level.");
                 QMessageBox::information(
-                    QApplication::activeWindow(),
-                    "Error",
-                    msg,
-                    QMessageBox::Ok);
+                    AzToolsFramework::GetActiveWindow(), "PromptComponent", msg, QMessageBox::Ok);
+
             }
             else
             {

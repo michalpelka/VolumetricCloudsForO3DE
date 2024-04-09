@@ -15,9 +15,9 @@
 #include "EditorCloudTextureComputeComponent.h"
 
 AZ_PUSH_DISABLE_WARNING(4251 4800, "-Wunknown-warning-option") // disable warnings spawned by QT
-#include <QApplication.h>
+#include <QApplication>
 #include <QMessageBox>
-#include <QPushButton.h>
+#include <QPushButton>
 AZ_POP_DISABLE_WARNING
 
 namespace VolumetricClouds

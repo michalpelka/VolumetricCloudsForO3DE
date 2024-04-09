@@ -15,10 +15,14 @@
 #include <VolumetricClouds/CloudTextureProviderBus.h>
 #include <Renderer/CloudTexturePresentationData.h>
 
+namespace AZ::RPI
+{
+    class Scene;
+    class Shader;
+}
+
 namespace VolumetricClouds
 {
-    class AZ::RPI::Scene;
-    class AZ::RPI::Shader;
 
     class CloudTextureComputePass;
 
@@ -28,7 +32,7 @@ namespace VolumetricClouds
         , private CloudTextureProviderNotificationBus::MultiHandler
     {
     public:
-        AZ_CLASS_ALLOCATOR(CloudTexturesDebugViewerFeatureProcessor, AZ::SystemAllocator)
+        AZ_CLASS_ALLOCATOR(CloudTexturesDebugViewerFeatureProcessor, AZ::SystemAllocator);
         AZ_RTTI(CloudTexturesDebugViewerFeatureProcessor, "{C83F4C25-33BE-4E77-9413-9B35F61483B3}", AZ::RPI::FeatureProcessor);
 
         static void Reflect(AZ::ReflectContext* context);

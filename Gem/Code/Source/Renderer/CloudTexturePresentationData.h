@@ -26,9 +26,8 @@ namespace VolumetricClouds
     // Has all the data the shader needs to draw a slice of a 3D Noise Texture.
     struct CloudTexturePresentationData
     {
-        AZ_CLASS_ALLOCATOR_DECL;
+        AZ_CLASS_ALLOCATOR(CloudTexturePresentationData, AZ::SystemAllocator);
         AZ_TYPE_INFO_WITH_NAME_DECL(CloudTexturePresentationData);
-        AZ_RTTI_NO_TYPE_INFO_DECL();
 
         static void Reflect(AZ::ReflectContext* reflection);
 

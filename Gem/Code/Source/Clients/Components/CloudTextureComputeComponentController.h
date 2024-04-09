@@ -27,7 +27,8 @@ namespace VolumetricClouds
     public:
         AZ_RTTI(CloudTextureComputeComponentConfig, "{8BFFCCD3-EC7B-43E2-94FC-C62CB8FCDE52}", AZ::ComponentConfig);
         AZ_CLASS_ALLOCATOR(CloudTextureComputeComponentConfig, AZ::SystemAllocator);
-    
+
+        virtual ~CloudTextureComputeComponentConfig() = default;
         static void Reflect(AZ::ReflectContext* context);
     
         // How to Debug render the Texture3D in the scene.

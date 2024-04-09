@@ -1,11 +1,9 @@
 /*
-* Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
-*
-* SPDX-License-Identifier: Apache-2.0 OR MIT
-*
-*/
-
-#pragma once
+ * Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
+ *
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
+ *
+ */
 
 #include <AzCore/Console/Console.h>
 
@@ -15,16 +13,14 @@
 
 namespace VolumetricClouds
 {
-    PngCloudTextureWriter::PngCloudTextureWriter(uint16_t mipLevels, AZ::RHI::Format pixelFormat, const AZ::IO::Path& outputDir, const AZStd::string& stemPrefix)
+    PngCloudTextureWriter::PngCloudTextureWriter(
+        uint16_t mipLevels, AZ::RHI::Format pixelFormat, const AZ::IO::Path& outputDir, const AZStd::string& stemPrefix)
         : ICloudTextureWriter(mipLevels, pixelFormat, outputDir, stemPrefix)
     {
-
     }
-
 
     PngCloudTextureWriter::~PngCloudTextureWriter()
     {
-
     }
 
     //////////////////////////////////////////////////////////////
@@ -49,7 +45,7 @@ namespace VolumetricClouds
         {
             console->GetCvarValue("r_pngCompressionLevel", saveSettings.m_compressionLevel);
         }
-        saveSettings.m_stripAlpha = false; 
+        saveSettings.m_stripAlpha = false;
 
         const uint8_t* const mipDataBuffer = mipLevelData.m_dataBuffer->data();
 
@@ -59,10 +55,10 @@ namespace VolumetricClouds
         const uint32_t numColumns = mipSize.m_width;
         const uint32_t bytesPerRow = numColumns * 4;
         const uint32_t bytesPerSlice = bytesPerRow * numRows;
-        //const uint8_t* bytes = imageCpuBytes->data();
+        // const uint8_t* bytes = imageCpuBytes->data();
         for (uint32_t sliceIdx = 0; sliceIdx < numSlices; ++sliceIdx)
         {
-            //const uint8_t* slicePtr = bytes + (bytesPerSlice * sliceIdx);
+            // const uint8_t* slicePtr = bytes + (bytesPerSlice * sliceIdx);
             const auto itBegin = mipDataBuffer + (bytesPerSlice * sliceIdx);
             const auto itEnd = itBegin + bytesPerSlice;
             AZStd::span<const uint8_t> spanBytes = { itBegin, itEnd };

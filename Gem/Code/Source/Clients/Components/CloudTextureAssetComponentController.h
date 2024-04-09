@@ -32,7 +32,8 @@ namespace VolumetricClouds
     public:
         AZ_RTTI(CloudTextureAssetComponentConfig, "{219D8BD9-1A74-4011-AEAE-C1D489A3CEDC}", AZ::ComponentConfig);
         AZ_CLASS_ALLOCATOR(CloudTextureAssetComponentConfig, AZ::SystemAllocator);
-    
+
+        virtual ~CloudTextureAssetComponentConfig() = default;
         static void Reflect(AZ::ReflectContext* context);
 
         AZ::Data::Asset<AZ::RPI::StreamingImageAsset> m_cloudTextureAsset;
