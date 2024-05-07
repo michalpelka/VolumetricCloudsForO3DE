@@ -216,10 +216,4 @@ namespace VolumetricClouds
         m_pixelIndex4x4 = frameCounter % 16;
     }
 
-    // ComputePass overrides...
-    void CloudscapeComputePass::OnShaderReloadedInternal()
-    {
-        m_srgNeedsUpdate = true;
-    }
-
 }   // VolumetricClouds AZ
