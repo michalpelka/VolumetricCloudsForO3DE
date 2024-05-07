@@ -5,6 +5,9 @@
 *
 */
 
+#include "CloudscapeComponentController.h"
+#include "AzCore/Serialization/EditContextConstants.inl"
+
 #include <AzCore/Asset/AssetSerializer.h>
 #include <AzCore/Serialization/SerializeContext.h>
 
@@ -14,7 +17,8 @@
 #include <Atom/RPI.Public/ViewportContext.h>
 
 #include <Renderer/CloudscapeFeatureProcessor.h>
-#include "CloudscapeComponentController.h"
+
+#include <iostream>
 
 namespace VolumetricClouds
 {
@@ -31,21 +35,45 @@ namespace VolumetricClouds
                     ->Field("SunEntity", &CloudscapeComponentConfig::m_sunEntity)
                     ->Field("WeatherMap", &CloudscapeComponentConfig::m_weatherMap)
                     ->Field("ShaderConstantData", &CloudscapeComponentConfig::m_shaderConstantData)
-                    ;
+                    ->Field("Sunlight intensity cutoff", &CloudscapeComponentConfig::m_sunlightIntensityCutOff);
 
                 if (auto editContext = serializeContext->GetEditContext())
                 {
-                    editContext->Class<CloudscapeComponentConfig>(
-                        "CloudscapeComponentConfig", "Configuration data for the Volumetric Clouds Component.")
+                    editContext
+                        ->Class<CloudscapeComponentConfig>(
+                            "CloudscapeComponentConfig", "Configuration data for the Volumetric Clouds Component.")
                         ->ClassElement(AZ::Edit::ClassElements::EditorData, "")
                         ->Attribute(AZ::Edit::Attributes::AutoExpand, true)
                         ->Attribute(AZ::Edit::Attributes::Visibility, AZ::Edit::PropertyVisibility::Show)
-                        ->DataElement(AZ::Edit::UIHandlers::Default, &CloudscapeComponentConfig::m_lowFreqTextureEntity, "Low Frequency Texture Entity", "An entity that provides a, typically 128x128x128, Texture3D for sampling low frequency cloud-like data.")
-                        ->DataElement(AZ::Edit::UIHandlers::Default, &CloudscapeComponentConfig::m_highFreqTextureEntity, "High Frequency Texture Entity", "An entity that provides a, typically 32x32x32, Texture3D for sampling high frequency cloud-like data.")
-                        ->DataElement(AZ::Edit::UIHandlers::Default, &CloudscapeComponentConfig::m_weatherMap, "Weather Map", "4-channels weather map data.")
-                        ->DataElement(AZ::Edit::UIHandlers::Default, &CloudscapeComponentConfig::m_sunEntity, "Sun Entity", "An entity with a Directional Light Component, representing the Sun. Defines sun light direction and color.")
-                        ->DataElement(AZ::Edit::UIHandlers::Default, &CloudscapeComponentConfig::m_shaderConstantData, "Shader Constants", "")
-                        ;
+                        ->DataElement(
+                            AZ::Edit::UIHandlers::Default,
+                            &CloudscapeComponentConfig::m_lowFreqTextureEntity,
+                            "Low Frequency Texture Entity",
+                            "An entity that provides a, typically 128x128x128, Texture3D for sampling low frequency cloud-like data.")
+                        ->DataElement(
+                            AZ::Edit::UIHandlers::Default,
+                            &CloudscapeComponentConfig::m_highFreqTextureEntity,
+                            "High Frequency Texture Entity",
+                            "An entity that provides a, typically 32x32x32, Texture3D for sampling high frequency cloud-like data.")
+                        ->DataElement(
+                            AZ::Edit::UIHandlers::Default,
+                            &CloudscapeComponentConfig::m_weatherMap,
+                            "Weather Map",
+                            "4-channels weather map data.")
+                        ->DataElement(
+                            AZ::Edit::UIHandlers::Default,
+                            &CloudscapeComponentConfig::m_sunEntity,
+                            "Sun Entity",
+                            "An entity with a Directional Light Component, representing the Sun. Defines sun light direction and color.")
+                        ->DataElement(
+                            AZ::Edit::UIHandlers::Default, &CloudscapeComponentConfig::m_shaderConstantData, "Shader Constants", "")
+                        ->DataElement(
+                            AZ::Edit::UIHandlers::Slider,
+                            &CloudscapeComponentConfig::m_sunlightIntensityCutOff,
+                            "Sunlight intensity change range",
+                            "Range used to modify the sunlight intensity based on the sun's position during sunset and sunrise.")
+                        ->Attribute(AZ::Edit::Attributes::Min, 0.0f)
+                        ->Attribute(AZ::Edit::Attributes::Max, 0.25f);
                 }
             }
         }
@@ -200,6 +228,7 @@ namespace VolumetricClouds
             auto viewportContext = viewportContextInterface->GetViewportContextByScene(m_scene);
             AZ::RPI::ViewportContextIdNotificationBus::Handler::BusConnect(viewportContext->GetId());
 
+            m_sunLightIntensity = m_configuration.m_shaderConstantData.m_sunLightIntensity;
         }
 
         void CloudscapeComponentController::Deactivate()
@@ -433,6 +462,12 @@ namespace VolumetricClouds
         void CloudscapeComponentController::OnTransformChanged(const AZ::Transform& /*local*/, const AZ::Transform& worldTM)
         {
             m_configuration.m_shaderConstantData.m_directionTowardsTheSun = -worldTM.GetBasisY();
+            float sunZPosition = -worldTM.GetBasisY().GetZ();
+            if (sunZPosition > -m_configuration.m_sunlightIntensityCutOff && sunZPosition < m_configuration.m_sunlightIntensityCutOff)
+            {
+                m_configuration.m_shaderConstantData.m_sunLightIntensity = (sunZPosition + m_configuration.m_sunlightIntensityCutOff) /
+                    (m_configuration.m_sunlightIntensityCutOff * 2) * m_sunLightIntensity;
+            }
             if (m_cloudscapeFeatureProcessor)
             {
                 m_cloudscapeFeatureProcessor->UpdateShaderConstantData(m_configuration.m_shaderConstantData);
