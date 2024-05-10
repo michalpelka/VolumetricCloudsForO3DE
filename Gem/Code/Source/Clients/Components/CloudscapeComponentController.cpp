@@ -6,7 +6,6 @@
 */
 
 #include "CloudscapeComponentController.h"
-#include "AzCore/Serialization/EditContextConstants.inl"
 
 #include <AzCore/Asset/AssetSerializer.h>
 #include <AzCore/Serialization/SerializeContext.h>
@@ -17,8 +16,6 @@
 #include <Atom/RPI.Public/ViewportContext.h>
 
 #include <Renderer/CloudscapeFeatureProcessor.h>
-
-#include <iostream>
 
 namespace VolumetricClouds
 {
