@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "AzCore/Component/EntityId.h"
 #include <AzCore/Component/Component.h>
 #include <AzCore/Component/TransformBus.h>
 
@@ -51,6 +52,9 @@ namespace VolumetricClouds
         AZ::Data::Asset<AZ::RPI::StreamingImageAsset> m_weatherMap;
 
         CloudscapeShaderConstantData m_shaderConstantData;
+
+        // Used to modify the sunlight intensity based on the sun's position during sunset and sunrise.
+        float m_sunlightIntensityCutOff = 0.025f;
     };
     
 
@@ -171,6 +175,8 @@ namespace VolumetricClouds
         CloudscapeFeatureProcessor* m_cloudscapeFeatureProcessor = nullptr;
 
         AZ::Render::DirectionalLightConfigurationChangedEvent::Handler m_directionalLightConfigChangedEventHandler;
+
+        float m_sunLightIntensity = 1.0f;
     };
 
 } // namespace VolumetricClouds

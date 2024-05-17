@@ -52,6 +52,7 @@ namespace VolumetricClouds
 
     void VolumetricCloudsSystemComponent::GetRequiredServices([[maybe_unused]] AZ::ComponentDescriptor::DependencyArrayType& required)
     {
+        required.push_back(AZ_CRC_CE("RPISystem"));
     }
 
     void VolumetricCloudsSystemComponent::GetDependentServices([[maybe_unused]] AZ::ComponentDescriptor::DependencyArrayType& dependent)
