@@ -62,9 +62,6 @@ namespace VolumetricClouds
         void CompileResources(const AZ::RHI::FrameGraphCompileContext& context) override;
         // void BuildCommandListInternal(const AZ::RHI::FrameGraphExecuteContext& context) override;
 
-        // ComputePass overrides...
-        void OnShaderReloadedInternal() override;
-
         // A helper function
         void SetImageAttachmentBinding(uint32_t attachmentIndex, AZ::Data::Instance<AZ::RPI::AttachmentImage> attachmentImage);
     
