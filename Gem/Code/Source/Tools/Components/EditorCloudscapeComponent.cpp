@@ -48,6 +48,11 @@ namespace VolumetricClouds
 
         }
 
+        void EditorCloudscapeComponent::GetRequiredServices(AZ::ComponentDescriptor::DependencyArrayType &required)
+        {
+            required.push_back(AZ_CRC_CE("ROS2Frame"));
+        }
+
         EditorCloudscapeComponent::EditorCloudscapeComponent(const CloudscapeComponentConfig& config)
             : BaseClass(config)
         {

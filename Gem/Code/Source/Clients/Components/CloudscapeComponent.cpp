@@ -26,4 +26,15 @@ namespace VolumetricClouds
         }
 
     }
+
+    void CloudscapeComponent::Activate()
+    {
+        BaseClass::Activate();
+        m_controller.CreateCloudDensitySubscriptionHandler(GetEntity());
+    }
+
+    void CloudscapeComponent::Deactivate()
+    {
+        BaseClass::Deactivate();
+    }
 } // namespace VolumetricClouds

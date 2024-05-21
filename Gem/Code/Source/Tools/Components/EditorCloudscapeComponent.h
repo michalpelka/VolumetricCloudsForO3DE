@@ -22,6 +22,8 @@ namespace VolumetricClouds
         AZ_EDITOR_COMPONENT(EditorCloudscapeComponent, EditorCloudscapeComponentTypeId, BaseClass);
     
         static void Reflect(AZ::ReflectContext* context);
+
+        static void GetRequiredServices(AZ::ComponentDescriptor::DependencyArrayType& required);
     
         EditorCloudscapeComponent() = default;
         EditorCloudscapeComponent(const CloudscapeComponentConfig& config);

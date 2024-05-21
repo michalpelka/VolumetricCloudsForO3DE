@@ -57,7 +57,7 @@ ly_add_target(
             AZ::AzFramework
             Gem::Atom_RPI.Public
             Gem::AtomLyIntegration_CommonFeatures.Public
-
+            Gem::ROS2.Static
 )
 
 # Here add ${gem_name} target, it depends on the Private Object library and Public API interface
@@ -78,6 +78,8 @@ ly_add_target(
         PRIVATE
             Gem::${gem_name}.Private.Object
 )
+
+target_depends_on_ros2_packages(${gem_name}.Private.Object std_msgs)
 
 # By default, we will specify that the above target ${gem_name} would be used by
 # Client and Server type targets when this gem is enabled.  If you don't want it
@@ -129,6 +131,7 @@ if(PAL_TRAIT_BUILD_HOST_TOOLS)
                 Gem::Atom_Feature_Common.Public
                 Gem::AtomLyIntegration_CommonFeatures.Public
                 Gem::Atom_Utils.Static
+                Gem::ROS2.Static
     )
 
     ly_add_target(
