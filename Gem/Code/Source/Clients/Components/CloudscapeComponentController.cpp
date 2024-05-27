@@ -259,11 +259,8 @@ namespace VolumetricClouds
                 m_scene = nullptr;
             }
 
-            if (m_subscriptionHandler)
-            {
-                m_subscriptionHandler->Deactivate();
-                m_subscriptionHandler.reset();
-            }
+            DestroyCloudDensitySubscriptionHandler();
+
             m_isActive = false;
         }
 
