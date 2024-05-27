@@ -130,6 +130,7 @@ namespace VolumetricClouds
         /////////////////////////////////////////////////////////
 
         void CreateCloudDensitySubscriptionHandler(const AZ::Entity* entity);
+        void DestroyCloudDensitySubscriptionHandler();
 
     private:
         AZ_DISABLE_COPY(CloudscapeComponentController);

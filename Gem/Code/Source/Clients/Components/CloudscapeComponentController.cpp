@@ -226,6 +226,7 @@ namespace VolumetricClouds
             }
 
             m_configuration.m_cloudDensityTopicConfiguration.m_type = "std_msgs::msg::Float32";
+            m_configuration.m_cloudDensityTopicConfiguration.m_topic = "clouds/density";
 
             m_prevConfiguration = m_configuration;
             EnableFeatureProcessor();
@@ -747,6 +748,15 @@ namespace VolumetricClouds
                         ProcessCloudDensityMessage(message);
                     });
             m_subscriptionHandler->Activate(entity, m_configuration.m_cloudDensityTopicConfiguration);
+        }
+
+        void CloudscapeComponentController::DestroyCloudDensitySubscriptionHandler()
+        {
+            if (m_subscriptionHandler)
+            {
+                m_subscriptionHandler->Deactivate();
+                m_subscriptionHandler.reset();
+            }
         }
 
 } // namespace VolumetricClouds

@@ -36,5 +36,6 @@ namespace VolumetricClouds
     void CloudscapeComponent::Deactivate()
     {
         BaseClass::Deactivate();
+        m_controller.DestroyCloudDensitySubscriptionHandler();
     }
 } // namespace VolumetricClouds
