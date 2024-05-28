@@ -19,6 +19,12 @@
 
 namespace VolumetricClouds
 {
+        CloudscapeComponentConfig::CloudscapeComponentConfig()
+        {
+            m_cloudDensityTopicConfiguration.m_type = "std_msgs::msg::Float32";
+            m_cloudDensityTopicConfiguration.m_topic = "clouds/density";
+        }
+
         void CloudscapeComponentConfig::Reflect(AZ::ReflectContext* context)
         {
             CloudscapeShaderConstantData::Reflect(context);
@@ -224,9 +230,6 @@ namespace VolumetricClouds
                 AZ::Data::AssetBus::Handler::BusConnect(textureAssetId);
                 m_configuration.m_weatherMap.QueueLoad();
             }
-
-            m_configuration.m_cloudDensityTopicConfiguration.m_type = "std_msgs::msg::Float32";
-            m_configuration.m_cloudDensityTopicConfiguration.m_topic = "clouds/density";
 
             m_prevConfiguration = m_configuration;
             EnableFeatureProcessor();

@@ -41,6 +41,7 @@ namespace VolumetricClouds
         AZ_RTTI(CloudscapeComponentConfig, "{6E894FEA-BAE8-4089-B76D-B082C4A5B394}", AZ::ComponentConfig);
         AZ_CLASS_ALLOCATOR(CloudscapeComponentConfig, AZ::SystemAllocator);
 
+        CloudscapeComponentConfig();
         virtual ~CloudscapeComponentConfig() = default;
         static void Reflect(AZ::ReflectContext* context);
         
