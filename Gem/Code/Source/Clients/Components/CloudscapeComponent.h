@@ -22,7 +22,10 @@ namespace VolumetricClouds
     
         CloudscapeComponent() = default;
         CloudscapeComponent(const CloudscapeComponentConfig& config);
-    
+
+        void Activate() override;
+        void Deactivate() override;
+
         static void Reflect(AZ::ReflectContext* context);
     };
 } // namespace VolumetricClouds

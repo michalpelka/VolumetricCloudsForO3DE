@@ -33,6 +33,7 @@
         "Profiler",
         "PythonAssetBuilder",
         "QtForPython",
+        "ROS2==2.0.0",
         "RemoteTools",
         "SceneProcessing",
         "ScriptedEntityTweener",

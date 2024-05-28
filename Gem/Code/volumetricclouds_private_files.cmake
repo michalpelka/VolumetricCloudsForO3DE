@@ -21,6 +21,8 @@ set(FILES
     Source/Clients/Components/CloudscapeComponent.h
     Source/Clients/Components/CloudscapeComponentController.cpp
     Source/Clients/Components/CloudscapeComponentController.h
+    Source/Clients/Components/CloudscapeSubscriptionHandler.cpp
+    Source/Clients/Components/CloudscapeSubscriptionHandler.h
     Source/Renderer/CloudTextureComputePipeline.cpp
     Source/Renderer/CloudTextureComputePipeline.h
     Source/Renderer/CloudTexturesDebugViewerFeatureProcessor.cpp

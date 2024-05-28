@@ -19,6 +19,10 @@
 #include <VolumetricClouds/CloudTextureProviderBus.h>
 #include <Renderer/CloudscapeShaderConstantData.h>
 
+#include "CloudscapeSubscriptionHandler.h"
+#include <ROS2/Communication/TopicConfiguration.h>
+
+
 namespace AZ::RPI
 {
     class Scene;
@@ -37,6 +41,7 @@ namespace VolumetricClouds
         AZ_RTTI(CloudscapeComponentConfig, "{6E894FEA-BAE8-4089-B76D-B082C4A5B394}", AZ::ComponentConfig);
         AZ_CLASS_ALLOCATOR(CloudscapeComponentConfig, AZ::SystemAllocator);
 
+        CloudscapeComponentConfig();
         virtual ~CloudscapeComponentConfig() = default;
         static void Reflect(AZ::ReflectContext* context);
         
@@ -55,6 +60,7 @@ namespace VolumetricClouds
 
         // Used to modify the sunlight intensity based on the sun's position during sunset and sunrise.
         float m_sunlightIntensityCutOff = 0.025f;
+        ROS2::TopicConfiguration m_cloudDensityTopicConfiguration;
     };
     
 
@@ -124,6 +130,9 @@ namespace VolumetricClouds
         // VolumetricCloudsRequestBus::Handler overrides END
         /////////////////////////////////////////////////////////
 
+        void CreateCloudDensitySubscriptionHandler(const AZ::Entity* entity);
+        void DestroyCloudDensitySubscriptionHandler();
+
     private:
         AZ_DISABLE_COPY(CloudscapeComponentController);
         static constexpr char LogName[] = "CloudscapeComponentController";
@@ -133,6 +142,8 @@ namespace VolumetricClouds
 
         void FetchAllSunLightData();
         void NotifySunLightDataChanged();
+
+        void ProcessCloudDensityMessage(const std_msgs::msg::Float32& message);
 
         // A helper function that makes sure the shader constant data
         // make sense and are clamped within good boundaries before being sent to the
@@ -175,6 +186,8 @@ namespace VolumetricClouds
         CloudscapeFeatureProcessor* m_cloudscapeFeatureProcessor = nullptr;
 
         AZ::Render::DirectionalLightConfigurationChangedEvent::Handler m_directionalLightConfigChangedEventHandler;
+
+        AZStd::unique_ptr<ROS2::IControlSubscriptionHandler> m_subscriptionHandler;
 
         float m_sunLightIntensity = 1.0f;
     };

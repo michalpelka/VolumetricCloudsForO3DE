@@ -19,6 +19,12 @@
 
 namespace VolumetricClouds
 {
+        CloudscapeComponentConfig::CloudscapeComponentConfig()
+        {
+            m_cloudDensityTopicConfiguration.m_type = "std_msgs::msg::Float32";
+            m_cloudDensityTopicConfiguration.m_topic = "clouds/density";
+        }
+
         void CloudscapeComponentConfig::Reflect(AZ::ReflectContext* context)
         {
             CloudscapeShaderConstantData::Reflect(context);
@@ -32,7 +38,8 @@ namespace VolumetricClouds
                     ->Field("SunEntity", &CloudscapeComponentConfig::m_sunEntity)
                     ->Field("WeatherMap", &CloudscapeComponentConfig::m_weatherMap)
                     ->Field("ShaderConstantData", &CloudscapeComponentConfig::m_shaderConstantData)
-                    ->Field("Sunlight intensity cutoff", &CloudscapeComponentConfig::m_sunlightIntensityCutOff);
+                    ->Field("Sunlight intensity cutoff", &CloudscapeComponentConfig::m_sunlightIntensityCutOff)
+                    ->Field("CloudDensityTopicConfiguration", &CloudscapeComponentConfig::m_cloudDensityTopicConfiguration);
 
                 if (auto editContext = serializeContext->GetEditContext())
                 {
@@ -70,7 +77,13 @@ namespace VolumetricClouds
                             "Sunlight intensity change range",
                             "Range used to modify the sunlight intensity based on the sun's position during sunset and sunrise.")
                         ->Attribute(AZ::Edit::Attributes::Min, 0.0f)
-                        ->Attribute(AZ::Edit::Attributes::Max, 0.25f);
+                        ->Attribute(AZ::Edit::Attributes::Max, 0.25f)
+                        ->DataElement(
+                            AZ::Edit::UIHandlers::Default,
+                            &CloudscapeComponentConfig::m_cloudDensityTopicConfiguration,
+                            "Cloud density topic configuration",
+                            "Configuration of the ROS2 topic to which the component subscribes."
+                        );
                 }
             }
         }
@@ -248,6 +261,9 @@ namespace VolumetricClouds
                 m_cloudscapeFeatureProcessor = nullptr;
                 m_scene = nullptr;
             }
+
+            DestroyCloudDensitySubscriptionHandler();
+
             m_isActive = false;
         }
 
@@ -500,6 +516,11 @@ namespace VolumetricClouds
             }
         }
 
+        void CloudscapeComponentController::ProcessCloudDensityMessage(const std_msgs::msg::Float32& message)
+        {
+            SetCloudDensity(message.data);
+        }
+
         //! RPI::ViewportContextIdNotificationBus
         void CloudscapeComponentController::OnViewportSizeChanged([[maybe_unused]] AzFramework::WindowSize size)
         {
@@ -660,6 +681,11 @@ namespace VolumetricClouds
 
         void CloudscapeComponentController::SetCloudDensity(float density)
         {
+            if (density < 0.0f || density > 1.0f)
+            {
+                AZ_Error("CloudscapeComponentController", false, "Cloud density to be set is not in range [0.0, 1.0]. Value: %f", density);
+                return;
+            }
             m_configuration.m_shaderConstantData.m_globalCloudDensity = density;
             SubmitShaderConstantData();
         }
@@ -713,5 +739,24 @@ namespace VolumetricClouds
         }
         // VolumetricCloudsRequestBus::Handler overrides END
         /////////////////////////////////////////////////////////
+
+        void CloudscapeComponentController::CreateCloudDensitySubscriptionHandler(const AZ::Entity* entity)
+        {
+            m_subscriptionHandler = AZStd::make_unique<CloudscapeSubscriptionHandler>(
+                    [this](const std_msgs::msg::Float32& message)
+                    {
+                        ProcessCloudDensityMessage(message);
+                    });
+            m_subscriptionHandler->Activate(entity, m_configuration.m_cloudDensityTopicConfiguration);
+        }
+
+        void CloudscapeComponentController::DestroyCloudDensitySubscriptionHandler()
+        {
+            if (m_subscriptionHandler)
+            {
+                m_subscriptionHandler->Deactivate();
+                m_subscriptionHandler.reset();
+            }
+        }
 
 } // namespace VolumetricClouds

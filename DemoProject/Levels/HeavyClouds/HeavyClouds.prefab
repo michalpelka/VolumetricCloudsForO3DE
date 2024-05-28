@@ -997,6 +997,10 @@
                                     "ScatteringCoefficient": 0.0689999982714653,
                                     "HenyeyGreensteinG": 0.5
                                 }
+                            },
+                            "CloudDensityTopicConfiguration": {
+                                "Type": "std_msgs::msg::Float32",
+                                "Topic": "some/topic"
                             }
                         }
                     }
@@ -1035,6 +1039,13 @@
                 "EditorVisibilityComponent": {
                     "$type": "EditorVisibilityComponent",
                     "Id": 10817530613718184900
+                },
+                "ROS2FrameComponent": {
+                    "$type": "GenericComponentWrapper",
+                    "Id": 2174984008678663565,
+                    "m_template": {
+                        "$type": "ROS2FrameComponent"
+                    }
                 },
                 "TransformComponent": {
                     "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
