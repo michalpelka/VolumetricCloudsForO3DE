@@ -141,7 +141,7 @@ namespace VolumetricClouds
         }
         const uint16_t mipSliceMax = mipsCount - 1;
         AZ::RHI::ImageSubresourceRange mipsRange(0 /*mipSliceMin*/, mipSliceMax, 0, 0);
-        const bool result = m_textureComputePass->ReadbackAttachment(m_attachmentsReadback, m_renderTaskId,
+        [[maybe_unused]] const bool result = m_textureComputePass->ReadbackAttachment(m_attachmentsReadback, m_renderTaskId,
             slotName, AZ::RPI::PassAttachmentReadbackOption::Output, &mipsRange);
         AZ_Error(LogName, result, "%s Failed to initialize ReadbackAttachment\n", __FUNCTION__);
     }
