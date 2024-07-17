@@ -141,7 +141,7 @@ namespace VolumetricClouds
         void EnableFeatureProcessor();
 
         void FetchAllSunLightData();
-        void NotifySunLightDataChanged();
+        void NotifySunLightDataChanged() override;
 
         void ProcessCloudDensityMessage(const std_msgs::msg::Float32& message);
 

@@ -65,6 +65,9 @@ namespace VolumetricClouds
 
         // Submits the current state of the parameters to the renderer.
         virtual void EndCallBatch() = 0;
+
+        // Notifies the renderer that the sun light data has changed.
+        virtual void NotifySunLightDataChanged() = 0;
     };
 
     class VolumetricCloudsBusTraits : public AZ::EBusTraits

@@ -161,6 +161,7 @@ namespace VolumetricClouds
                     // Cloud Material Properties
                     ->Event("GetCloudMaterialProperties", &VolumetricCloudsRequestBus::Events::GetCloudMaterialProperties)
                     ->Event("SetCloudMaterialProperties", &VolumetricCloudsRequestBus::Events::SetCloudMaterialProperties)
+                    ->Event("NotifySunLightDataChanged", &VolumetricCloudsRequestBus::Events::NotifySunLightDataChanged);
                     ;
             }
         }
