@@ -7,17 +7,17 @@
 
 #pragma once
 
-#include "Atom/RPI.Public/Base.h"
-#include "AzCore/Name/Name.h"
-#include "AzCore/std/containers/vector.h"
-#include <Atom/RPI.Reflect/Image/StreamingImageAsset.h>
+#include <AzCore/Name/Name.h>
+#include <AzCore/std/containers/vector.h>
 
+#include <Atom/RPI.Public/Base.h>
 #include <Atom/RPI.Public/Buffer/Buffer.h>
 #include <Atom/RPI.Public/FeatureProcessor.h>
 #include <Atom/RPI.Public/Pass/ComputePass.h>
 #include <Atom/RPI.Public/PipelineState.h>
 #include <Atom/RPI.Public/Shader/ShaderResourceGroup.h>
 #include <Atom/RPI.Public/ViewportContextBus.h>
+#include <Atom/RPI.Reflect/Image/StreamingImageAsset.h>
 
 #include <Renderer/CloudTexturePresentationData.h>
 #include <Renderer/CloudscapeShaderConstantData.h>
@@ -74,7 +74,6 @@ namespace VolumetricClouds
         //! AZ::RPI::FeatureProcessor overrides START...
         void Activate() override;
         void Deactivate() override;
-        void Simulate(const SimulatePacket&) override;
         void Render(const RenderPacket& renderPacket) override;
         void AddRenderPasses(AZ::RPI::RenderPipeline* renderPipeline) override;
         //! AZ::RPI::FeatureProcessor overrides END ...
@@ -83,6 +82,7 @@ namespace VolumetricClouds
         static constexpr const char* FeatureProcessorName = "CloudscapeFeatureProcessor";
 
         // There are two fullscreen sized "render attachments" for the cloudscape.
+        // These attachments exist per render pipeline.
         // They are owned by this feature processor.
         // Each frame one of the attachments is the current attachment and the other
         // represents the previous frame. This means that for all the passes involved
@@ -102,6 +102,7 @@ namespace VolumetricClouds
         AZStd::vector<AZ::RPI::ComputePass*> m_cloudscapeReprojectionPasses;
         AZStd::vector<CloudscapeRenderPass*> m_cloudscapeRenderPasses;
 
+        // View to pass index map used when updating the pixel index of the passes.
         AZStd::map<AZ::RPI::ViewPtr, uint32_t> m_viewToIndexMap;
 
         // Shader constants for m_cloudscapeReprojectionPass

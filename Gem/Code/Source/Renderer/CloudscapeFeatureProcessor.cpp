@@ -5,6 +5,7 @@
  *
  */
 
+#include <AzCore/Name/Name.h>
 #include <AzCore/Name/NameDictionary.h>
 
 #include <Atom/RHI.Reflect/InputStreamLayoutBuilder.h>
@@ -14,7 +15,7 @@
 #include <Atom/RPI.Public/RenderPipeline.h>
 
 #include <Atom/RPI.Public/RPIUtils.h>
-#include <Atom/RPI.Reflect/Asset/AssetUtils.h> // FIXME: Try removing
+// #include <Atom/RPI.Reflect/Asset/AssetUtils.h> // FIXME: Try removing
 
 #include <Atom/RPI.Public/Image/ImageSystemInterface.h>
 #include <Atom/RPI.Public/Pass/PassFilter.h>
@@ -26,12 +27,9 @@
 
 #include <Renderer/Passes/CloudscapeComputePass.h>
 #include <Renderer/Passes/CloudscapeRenderPass.h>
-// #include <Renderer/Passes/DepthBufferCopyPass.h>
-#include "AzCore/Name/Name.h"
-#include "CloudscapeFeatureProcessor.h"
-
-#include <iostream>
 #include <sys/types.h>
+// #include <Renderer/Passes/DepthBufferCopyPass.h>
+#include "CloudscapeFeatureProcessor.h"
 
 namespace VolumetricClouds
 {
@@ -52,50 +50,20 @@ namespace VolumetricClouds
 
     void CloudscapeFeatureProcessor::Deactivate()
     {
-        for (unsigned int i = 0; i < m_cloudscapeComputePasses.size(); i++)
-        {
-            if (m_cloudscapeComputePasses[i])
-            {
-                // This is necessary to avoid pesky error messages of invalid attachments when
-                // the feature processor is being destroyed.
-                // m_cloudscapeComputePasses[i]->QueueForRemoval();
-                // m_cloudscapeReprojectionPasses[i]->QueueForRemoval();
-                // m_cloudscapeRenderPasses[i]->QueueForRemoval();
-                // m_depthBufferCopyPass->QueueForRemoval();
-            }
-        }
         DisableSceneNotification();
         m_viewportSize = { 0, 0 };
         m_viewToIndexMap.clear();
-    }
-
-    void CloudscapeFeatureProcessor::Simulate(const SimulatePacket&)
-    {
-        // if (m_cloudscapeComputePass)
-        // {
-        //     std::cout << "CloudscapeFeatureProcessor::Simulate frame " << m_frameCounter << std::endl;
-
-        //     m_cloudscapeComputePass->UpdateFrameCounter(m_frameCounter);
-
-        //     const auto& passSrg = m_cloudscapeReprojectionPass->GetShaderResourceGroup();
-        //     const uint32_t pixelIndex4x4 = m_frameCounter % 16;
-        //     passSrg->SetConstant(m_pixelIndex4x4Index, pixelIndex4x4);
-
-        //     m_cloudscapeRenderPass->UpdateFrameCounter(m_frameCounter);
-
-        //     m_frameCounter++;
-        // }
+        m_cloudscapeComputePasses.clear();
+        m_cloudscapeReprojectionPasses.clear();
+        m_cloudscapeRenderPasses.clear();
     }
 
     void CloudscapeFeatureProcessor::Render(const RenderPacket& renderPacket)
     {
-        // for (const auto& view : renderPacket.m_views)
-        // {
-        //     // std::cout << "View: " << view->GetName().GetCStr() << std::endl;
-        // }
-
+        // List of indexes of the passes that need to be updated based on rendered views.
         AZStd::set<uint32_t> updates;
 
+        // Create the list of passes that need to be updated based on the views that are being rendered.
         for (const auto& view : renderPacket.m_views)
         {
             if (m_viewToIndexMap.find(view) != m_viewToIndexMap.end())
@@ -103,15 +71,14 @@ namespace VolumetricClouds
                 updates.insert(m_viewToIndexMap[view]);
             }
         }
+        // Update the frame counter (pixel index) for the passes that need to be updated.
         for (const auto index : updates)
         {
             if (m_cloudscapeComputePasses[index])
             {
-                // std::cout << "CloudscapeFeatureProcessor::Render frame " << m_frameCounter << std::endl;
                 uint32_t pixelIndex = m_cloudscapeComputePasses[index]->GetPixelIndex();
                 pixelIndex++;
                 m_cloudscapeComputePasses[index]->UpdateFrameCounter(pixelIndex);
-                std::cout << "Render: " << index << " frame: " << pixelIndex << std::endl;
 
                 const auto& passSrg = m_cloudscapeReprojectionPasses[index]->GetShaderResourceGroup();
                 const uint32_t pixelIndex4x4 = pixelIndex % 16;
@@ -139,19 +106,16 @@ namespace VolumetricClouds
             height = renderPipeline->GetRenderSettings().m_size.m_height;
         }
 
-        std::cout << "CloudscapeFeatureProcessor::AddRenderPasses width " << width << " height " << height << std::endl;
-        std::cout << "Default view: " << renderPipeline->GetDefaultView()->GetName().GetCStr() << std::endl;
-
-        // std::cout << "CloudscapeFeatureProcessor::AddRenderPasses summary" << std::endl;
-        // std::cout << "CloudscapeComputePasses: " << m_cloudscapeComputePasses.size() << std::endl;
-        // std::cout << "CloudscapeReprojectionPasses: " << m_cloudscapeReprojectionPasses.size() << std::endl;
-        // std::cout << "CloudscapeRenderPasses: " << m_cloudscapeRenderPasses.size() << std::endl;
-        // std::cout << "ViewToIndexMap: " << m_viewToIndexMap.size() << std::endl;
-
+        // Add a view to a view to pass index map. This is later used when updating which pixel of the cloudscape to ray march.
         m_viewToIndexMap[renderPipeline->GetDefaultView()] = m_cloudscapeComputePasses.size();
 
+        // Create a pair of output textures used for the modified pipeline..
         m_cloudOutputPairs.push_back({ CreateCloudscapeOutputAttachment(AZ::Name("CloudscapeOutput0"), { width, height }),
                                        CreateCloudscapeOutputAttachment(AZ::Name("CloudscapeOutput1"), { width, height }) });
+
+        // Create a index value for the passes.
+        const uint32_t passIndex = m_cloudscapeComputePasses.size();
+
         // Get the pass requests to create passes from the asset
         AddPassRequestToRenderPipeline(renderPipeline, "Passes/CloudscapeComputePassRequest.azasset", "DepthPrePass", false /*before*/);
         // Hold a reference to the compute pass
@@ -160,13 +124,14 @@ namespace VolumetricClouds
             AZ::RPI::PassFilter passFilter = AZ::RPI::PassFilter::CreateWithPassName(passName, renderPipeline);
             AZ::RPI::Pass* existingPass = AZ::RPI::PassSystemInterface::Get()->FindFirstPass(passFilter);
             m_cloudscapeComputePasses.push_back(azrtti_cast<CloudscapeComputePass*>(existingPass));
-            // m_cloudscapeComputePass.
+
             if (!m_cloudscapeComputePasses.back())
             {
                 AZ_Error(LogName, false, "%s Failed to find as RenderPass: %s", __FUNCTION__, passName.GetCStr());
                 return;
             }
-            m_cloudscapeComputePasses.back()->SetPassIndex(m_cloudscapeComputePasses.size() - 1);
+
+            m_cloudscapeComputePasses.back()->SetPassIndex(passIndex);
 
             if (m_shaderConstantData)
             {
@@ -204,7 +169,6 @@ namespace VolumetricClouds
             }
         }
     }
-
     //! AZ::RPI::FeatureProcessor overrides END ...
     /////////////////////////////////////////////////////////////////////////////
 

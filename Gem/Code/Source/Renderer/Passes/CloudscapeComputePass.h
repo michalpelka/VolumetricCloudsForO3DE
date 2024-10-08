@@ -47,8 +47,10 @@ namespace VolumetricClouds
 
         void UpdateFrameCounter(uint32_t frameCounter);
 
+        // Sets the index of the pass. This enables the pass to know which attachment to write to.
         void SetPassIndex(unsigned int passIndex);
 
+        // Returns the last rendered pixel index in the 4x4 block.
         inline uint32_t GetPixelIndex() const
         {
             return m_pixelIndex4x4;
@@ -73,7 +75,6 @@ namespace VolumetricClouds
         bool m_srgNeedsUpdate = true;
         const CloudscapeShaderConstantData* m_shaderConstantData = nullptr;
         uint32_t m_pixelIndex4x4 = 0; // Frame Counter % 16.
-
         unsigned int m_passIndex = 0;
 
         AZ::RHI::ShaderInputNameIndex m_pixelIndex4x4Index = "m_pixelIndex4x4";

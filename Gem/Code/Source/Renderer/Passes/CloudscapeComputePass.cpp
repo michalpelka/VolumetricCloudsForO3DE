@@ -16,10 +16,9 @@
 #include <Atom/RHI/FrameScheduler.h>
 #include <Atom/RHI/PipelineState.h>
 
-#include "CloudscapeComputePass.h"
 #include <Renderer/CloudscapeFeatureProcessor.h>
 
-#include <iostream>
+#include "CloudscapeComputePass.h"
 
 namespace VolumetricClouds
 {
@@ -83,7 +82,6 @@ namespace VolumetricClouds
             // This can happen when the feature processor is being destroyed.
             return;
         }
-        std::cout << m_passIndex << std::endl;
         const auto output0ImageAttachment = cloudscapeFeatureProcessor->GetOutput0ImageAttachment(m_passIndex);
         // Bind the first attachment
         SetImageAttachmentBinding(0, output0ImageAttachment);
@@ -125,9 +123,6 @@ namespace VolumetricClouds
             GetPathName().GetCStr());
 
         m_shaderResourceGroup->SetConstant(m_pixelIndex4x4Index, m_pixelIndex4x4);
-        // m_pixelIndex4x4 += 1;
-        // m_pixelIndex4x4 %= 16;
-        // std::cout << "Pass" << m_pixelIndex4x4 << std::endl;
 
         if (m_srgNeedsUpdate && m_shaderConstantData)
         {
