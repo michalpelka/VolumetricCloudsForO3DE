@@ -29,6 +29,7 @@
 #include <Renderer/Passes/CloudscapeRenderPass.h>
 #include <sys/types.h>
 // #include <Renderer/Passes/DepthBufferCopyPass.h>
+#include "Atom/RPI.Public/Pass/PassAttachment.h"
 #include "CloudscapeFeatureProcessor.h"
 
 namespace VolumetricClouds
@@ -91,20 +92,41 @@ namespace VolumetricClouds
 
     void CloudscapeFeatureProcessor::AddRenderPasses([[maybe_unused]] AZ::RPI::RenderPipeline* renderPipeline)
     {
-        uint32_t width;
-        uint32_t height;
-
-        // Getting the viewport size for the main pipeline as the target render sizes are note set in the render settings.
-        if (renderPipeline->GetDescriptor().m_name == "MainPipeline_0")
+        // Extract the image size from the first attachment of the render pipeline.
+        auto renderRootPass = renderPipeline->GetRootPass();
+        if (!renderRootPass)
         {
-            width = m_viewportSize.m_width;
-            height = m_viewportSize.m_height;
+            return;
+        }
+        AZ::RPI::PassAttachmentBinding rootBinding;
+        if (renderRootPass->GetInputOutputCount() != 0)
+        {
+            rootBinding = renderRootPass->GetInputOutputBinding(0);
+        }
+        else if (renderRootPass->GetOutputCount() != 0)
+        {
+            rootBinding = renderRootPass->GetOutputBinding(0);
         }
         else
         {
-            width = renderPipeline->GetRenderSettings().m_size.m_width;
-            height = renderPipeline->GetRenderSettings().m_size.m_height;
+            return;
         }
+
+        auto rootAttachment = rootBinding.GetAttachment();
+        if (!rootAttachment)
+        {
+            return;
+        }
+
+        if (rootAttachment->GetAttachmentType() != AZ::RHI::AttachmentType::Image)
+        {
+            return;
+        }
+        auto attachmentImageDesc = rootAttachment->GetTransientImageDescriptor();
+        [[maybe_unused]] auto imageSize = attachmentImageDesc.m_imageDescriptor.m_size;
+
+        uint32_t width = imageSize.m_width;
+        uint32_t height = imageSize.m_height;
 
         // Add a view to a view to pass index map. This is later used when updating which pixel of the cloudscape to ray march.
         m_viewToIndexMap[renderPipeline->GetDefaultView()] = m_cloudscapeComputePasses.size();
