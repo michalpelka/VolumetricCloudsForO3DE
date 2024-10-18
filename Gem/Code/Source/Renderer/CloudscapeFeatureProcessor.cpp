@@ -54,6 +54,7 @@ namespace VolumetricClouds
         DisableSceneNotification();
         m_viewportSize = { 0, 0 };
         m_viewToIndexMap.clear();
+        m_renderPipelineToIndexMap.clear();
         m_cloudscapeComputePasses.clear();
         m_cloudscapeReprojectionPasses.clear();
         m_cloudscapeRenderPasses.clear();
@@ -61,31 +62,27 @@ namespace VolumetricClouds
 
     void CloudscapeFeatureProcessor::Render(const RenderPacket& renderPacket)
     {
-        // List of indexes of the passes that need to be updated based on rendered views.
-        AZStd::set<uint32_t> updates;
-
-        // Create the list of passes that need to be updated based on the views that are being rendered.
-        for (const auto& view : renderPacket.m_views)
+        // Update the frame counter for the compute and render passes if required.
+        for (const auto& renderPipeline : m_renderPipelineToIndexMap)
         {
-            if (m_viewToIndexMap.find(view) != m_viewToIndexMap.end())
+            const auto& [pipeline, index] = renderPipeline;
+            if (pipeline)
             {
-                updates.insert(m_viewToIndexMap[view]);
-            }
-        }
-        // Update the frame counter (pixel index) for the passes that need to be updated.
-        for (const auto index : updates)
-        {
-            if (m_cloudscapeComputePasses[index])
-            {
-                uint32_t pixelIndex = m_cloudscapeComputePasses[index]->GetPixelIndex();
-                pixelIndex++;
-                m_cloudscapeComputePasses[index]->UpdateFrameCounter(pixelIndex);
+                if (pipeline->NeedsRender())
+                {
+                    if (m_cloudscapeComputePasses[index])
+                    {
+                        uint32_t pixelIndex = m_cloudscapeComputePasses[index]->GetPixelIndex();
+                        pixelIndex++;
+                        m_cloudscapeComputePasses[index]->UpdateFrameCounter(pixelIndex);
 
-                const auto& passSrg = m_cloudscapeReprojectionPasses[index]->GetShaderResourceGroup();
-                const uint32_t pixelIndex4x4 = pixelIndex % 16;
-                passSrg->SetConstant(m_pixelIndex4x4Index, pixelIndex4x4);
+                        const auto& passSrg = m_cloudscapeReprojectionPasses[index]->GetShaderResourceGroup();
+                        const uint32_t pixelIndex4x4 = pixelIndex % 16;
+                        passSrg->SetConstant(m_pixelIndex4x4Index, pixelIndex4x4);
 
-                m_cloudscapeRenderPasses[index]->UpdateFrameCounter(pixelIndex);
+                        m_cloudscapeRenderPasses[index]->UpdateFrameCounter(pixelIndex);
+                    }
+                }
             }
         }
     }
@@ -128,8 +125,8 @@ namespace VolumetricClouds
         uint32_t width = imageSize.m_width;
         uint32_t height = imageSize.m_height;
 
-        // Add a view to a view to pass index map. This is later used when updating which pixel of the cloudscape to ray march.
-        m_viewToIndexMap[renderPipeline->GetDefaultView()] = m_cloudscapeComputePasses.size();
+        // Add render pipeline to the map to check later if the frame counter needs to be updated.
+        m_renderPipelineToIndexMap[renderPipeline] = m_cloudscapeComputePasses.size();
 
         // Create a pair of output textures used for the modified pipeline..
         m_cloudOutputPairs.push_back({ CreateCloudscapeOutputAttachment(AZ::Name("CloudscapeOutput0"), { width, height }),

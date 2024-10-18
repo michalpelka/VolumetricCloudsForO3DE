@@ -104,6 +104,7 @@ namespace VolumetricClouds
 
         // View to pass index map used when updating the pixel index of the passes.
         AZStd::map<AZ::RPI::ViewPtr, uint32_t> m_viewToIndexMap;
+        AZStd::map<AZ::RPI::RenderPipeline*, uint32_t> m_renderPipelineToIndexMap;
 
         // Shader constants for m_cloudscapeReprojectionPass
         AZ::RHI::ShaderInputNameIndex m_pixelIndex4x4Index = "m_pixelIndex4x4";
