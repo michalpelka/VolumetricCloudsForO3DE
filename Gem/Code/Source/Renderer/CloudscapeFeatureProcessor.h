@@ -7,14 +7,17 @@
 
 #pragma once
 
-#include <Atom/RPI.Reflect/Image/StreamingImageAsset.h>
+#include <AzCore/Name/Name.h>
+#include <AzCore/std/containers/vector.h>
 
+#include <Atom/RPI.Public/Base.h>
 #include <Atom/RPI.Public/Buffer/Buffer.h>
 #include <Atom/RPI.Public/FeatureProcessor.h>
 #include <Atom/RPI.Public/Pass/ComputePass.h>
 #include <Atom/RPI.Public/PipelineState.h>
 #include <Atom/RPI.Public/Shader/ShaderResourceGroup.h>
 #include <Atom/RPI.Public/ViewportContextBus.h>
+#include <Atom/RPI.Reflect/Image/StreamingImageAsset.h>
 
 #include <Renderer/CloudTexturePresentationData.h>
 #include <Renderer/CloudscapeShaderConstantData.h>
@@ -58,20 +61,20 @@ namespace VolumetricClouds
             const AZ::Name& attachmentName, const AzFramework::WindowSize attachmentSize) const;
 
         // Call by the passes owned by this feature processor.
-        AZ::Data::Instance<AZ::RPI::AttachmentImage> GetOutput0ImageAttachment()
+        AZ::Data::Instance<AZ::RPI::AttachmentImage> GetOutput0ImageAttachment(unsigned int index)
         {
-            return m_cloudOutput0;
+            return m_cloudOutputPairs[index].first;
         }
-        AZ::Data::Instance<AZ::RPI::AttachmentImage> GetOutput1ImageAttachment()
+        AZ::Data::Instance<AZ::RPI::AttachmentImage> GetOutput1ImageAttachment(unsigned int index)
         {
-            return m_cloudOutput1;
+            return m_cloudOutputPairs[index].second;
         }
 
         //////////////////////////////////////////////////////////////////
         //! AZ::RPI::FeatureProcessor overrides START...
         void Activate() override;
         void Deactivate() override;
-        void Simulate(const SimulatePacket&) override;
+        void Render(const RenderPacket& renderPacket) override;
         void AddRenderPasses(AZ::RPI::RenderPipeline* renderPipeline) override;
         //! AZ::RPI::FeatureProcessor overrides END ...
         ///////////////////////////////////////////////////////////////////
@@ -79,12 +82,14 @@ namespace VolumetricClouds
         static constexpr const char* FeatureProcessorName = "CloudscapeFeatureProcessor";
 
         // There are two fullscreen sized "render attachments" for the cloudscape.
+        // These attachments exist per render pipeline.
         // They are owned by this feature processor.
         // Each frame one of the attachments is the current attachment and the other
         // represents the previous frame. This means that for all the passes involved
         // in cloudscape rendering these attachments become "Imported" attachments.
-        AZ::Data::Instance<AZ::RPI::AttachmentImage> m_cloudOutput0;
-        AZ::Data::Instance<AZ::RPI::AttachmentImage> m_cloudOutput1;
+
+        AZStd::vector<AZStd::pair<AZ::Data::Instance<AZ::RPI::AttachmentImage>, AZ::Data::Instance<AZ::RPI::AttachmentImage>>>
+            m_cloudOutputPairs;
 
         // We need a copy of the previous frame depth buffer, because we reproject 15/16 pixels each frame.
         // This causes visible artifacts at the borders of moving objects. The solution is that if
@@ -92,15 +97,14 @@ namespace VolumetricClouds
         // in the previous frame then we can choose to ray march it, or interpolate it.
         AZ::Data::Instance<AZ::RPI::AttachmentImage> m_previousFrameDepthBuffer;
 
-        // We keep track of the number of rendered frames so we can do the modulo 16 and pass
-        // the counter to the Cloudscape passes so they know who is the current frame and who is the
-        // previous frame.
-        uint32_t m_frameCounter = 0;
-
         // The passes managed by this feature processor.
-        CloudscapeComputePass* m_cloudscapeComputePass = nullptr;
-        AZ::RPI::ComputePass* m_cloudscapeReprojectionPass = nullptr;
-        CloudscapeRenderPass* m_cloudscapeRenderPass = nullptr;
+        AZStd::vector<CloudscapeComputePass*> m_cloudscapeComputePasses;
+        AZStd::vector<AZ::RPI::ComputePass*> m_cloudscapeReprojectionPasses;
+        AZStd::vector<CloudscapeRenderPass*> m_cloudscapeRenderPasses;
+
+        // View to pass index map used when updating the pixel index of the passes.
+        AZStd::map<AZ::RPI::ViewPtr, uint32_t> m_viewToIndexMap;
+        AZStd::map<AZ::RPI::RenderPipeline*, uint32_t> m_renderPipelineToIndexMap;
 
         // Shader constants for m_cloudscapeReprojectionPass
         AZ::RHI::ShaderInputNameIndex m_pixelIndex4x4Index = "m_pixelIndex4x4";

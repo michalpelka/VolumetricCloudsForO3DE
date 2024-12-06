@@ -1,9 +1,9 @@
 /*
-* Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
-*
-* SPDX-License-Identifier: Apache-2.0 OR MIT
-*
-*/
+ * Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
+ *
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
+ *
+ */
 #pragma once
 
 #include <AzCore/Memory/SystemAllocator.h>
@@ -12,10 +12,10 @@
 #include <Atom/RHI/DrawItem.h>
 #include <Atom/RHI/ScopeProducer.h>
 
+#include <Atom/RPI.Public/Image/StreamingImage.h>
 #include <Atom/RPI.Public/Pass/ComputePass.h>
 #include <Atom/RPI.Public/Shader/Shader.h>
 #include <Atom/RPI.Public/Shader/ShaderResourceGroup.h>
-#include <Atom/RPI.Public/Image/StreamingImage.h>
 
 #include <Renderer/CloudscapeShaderConstantData.h>
 
@@ -31,24 +31,31 @@ namespace VolumetricClouds
      *  When we are rendering to the current frame we only render to 1 of 16 pixels
      *  in a 4x4 block.
      */
-    class CloudscapeComputePass final
-        : public AZ::RPI::ComputePass
+    class CloudscapeComputePass final : public AZ::RPI::ComputePass
     {
         AZ_RPI_PASS(CloudscapeComputePass);
 
     public:
         AZ_RTTI(CloudscapeComputePass, "{ECB96676-7F1B-41E5-9C5F-89EA02FD116E}", AZ::RPI::ComputePass);
         AZ_CLASS_ALLOCATOR(CloudscapeComputePass, AZ::SystemAllocator);
-    
-    
-        virtual ~CloudscapeComputePass();// = default;
-    
+
+        virtual ~CloudscapeComputePass(); // = default;
+
         static AZ::RPI::Ptr<CloudscapeComputePass> Create(const AZ::RPI::PassDescriptor& descriptor);
 
         void UpdateShaderConstantData(const CloudscapeShaderConstantData& shaderData);
 
         void UpdateFrameCounter(uint32_t frameCounter);
-    
+
+        // Sets the index of the pass. This enables the pass to know which attachment to write to.
+        void SetPassIndex(unsigned int passIndex);
+
+        // Returns the last rendered pixel index in the 4x4 block.
+        inline uint32_t GetPixelIndex() const
+        {
+            return m_pixelIndex4x4;
+        }
+
     private:
         CloudscapeComputePass(const AZ::RPI::PassDescriptor& descriptor);
 
@@ -64,10 +71,11 @@ namespace VolumetricClouds
 
         // A helper function
         void SetImageAttachmentBinding(uint32_t attachmentIndex, AZ::Data::Instance<AZ::RPI::AttachmentImage> attachmentImage);
-    
+
         bool m_srgNeedsUpdate = true;
         const CloudscapeShaderConstantData* m_shaderConstantData = nullptr;
         uint32_t m_pixelIndex4x4 = 0; // Frame Counter % 16.
+        unsigned int m_passIndex = 0;
 
         AZ::RHI::ShaderInputNameIndex m_pixelIndex4x4Index = "m_pixelIndex4x4";
 
@@ -99,7 +107,6 @@ namespace VolumetricClouds
         AZ::RHI::ShaderInputNameIndex m_lowFreqNoiseTextureImageIndex = "m_lowFreqNoiseTexture";
         AZ::RHI::ShaderInputNameIndex m_highFreqNoiseTextureImageIndex = "m_highFreqNoiseTexture";
         AZ::RHI::ShaderInputNameIndex m_weatherMapImageIndex = "m_weatherMap";
-
     };
 
-}   // namespace VolumetricClouds
+} // namespace VolumetricClouds

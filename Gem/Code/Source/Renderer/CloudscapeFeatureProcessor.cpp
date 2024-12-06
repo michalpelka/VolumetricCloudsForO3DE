@@ -1,32 +1,35 @@
 /*
-* Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
-*
-* SPDX-License-Identifier: Apache-2.0 OR MIT
-*
-*/
+ * Copyright (c) Galib Arrieta (aka lumbermixalot@github, aka galibzon@github).
+ *
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
+ *
+ */
 
+#include <AzCore/Name/Name.h>
 #include <AzCore/Name/NameDictionary.h>
 
-#include <Atom/RHI/DrawPacketBuilder.h>
 #include <Atom/RHI.Reflect/InputStreamLayoutBuilder.h>
+#include <Atom/RHI/DrawPacketBuilder.h>
 
 #include <Atom/RPI.Public/Image/AttachmentImagePool.h>
 #include <Atom/RPI.Public/RenderPipeline.h>
 
 #include <Atom/RPI.Public/RPIUtils.h>
-#include <Atom/RPI.Reflect/Asset/AssetUtils.h> // FIXME: Try removing
+// #include <Atom/RPI.Reflect/Asset/AssetUtils.h> // FIXME: Try removing
 
+#include <Atom/RPI.Public/Image/ImageSystemInterface.h>
 #include <Atom/RPI.Public/Pass/PassFilter.h>
 #include <Atom/RPI.Public/Pass/RasterPass.h>
-#include <Atom/RPI.Public/Shader/Shader.h>
 #include <Atom/RPI.Public/Scene.h>
+#include <Atom/RPI.Public/Shader/Shader.h>
 #include <Atom/RPI.Public/View.h>
 #include <Atom/RPI.Public/ViewportContext.h>
-#include <Atom/RPI.Public/Image/ImageSystemInterface.h>
 
 #include <Renderer/Passes/CloudscapeComputePass.h>
 #include <Renderer/Passes/CloudscapeRenderPass.h>
+#include <sys/types.h>
 // #include <Renderer/Passes/DepthBufferCopyPass.h>
+#include "Atom/RPI.Public/Pass/PassAttachment.h"
 #include "CloudscapeFeatureProcessor.h"
 
 namespace VolumetricClouds
@@ -35,9 +38,7 @@ namespace VolumetricClouds
     {
         if (auto* serializeContext = azrtti_cast<AZ::SerializeContext*>(context))
         {
-            serializeContext
-                ->Class<CloudscapeFeatureProcessor, AZ::RPI::FeatureProcessor>()
-                ->Version(1);
+            serializeContext->Class<CloudscapeFeatureProcessor, AZ::RPI::FeatureProcessor>()->Version(1);
         }
     }
 
@@ -50,38 +51,90 @@ namespace VolumetricClouds
 
     void CloudscapeFeatureProcessor::Deactivate()
     {
-        if (m_cloudscapeComputePass)
-        {
-            // This is necessary to avoid pesky error messages of invalid attachments when
-            // the feature processor is being destroyed.
-            m_cloudscapeComputePass->QueueForRemoval();
-            m_cloudscapeReprojectionPass->QueueForRemoval();
-            m_cloudscapeRenderPass->QueueForRemoval();
-            //m_depthBufferCopyPass->QueueForRemoval();
-        }
-
         DisableSceneNotification();
-        m_viewportSize = { 0,0 };
+        m_viewportSize = { 0, 0 };
+        m_viewToIndexMap.clear();
+        m_renderPipelineToIndexMap.clear();
+        m_cloudscapeComputePasses.clear();
+        m_cloudscapeReprojectionPasses.clear();
+        m_cloudscapeRenderPasses.clear();
     }
 
-    void CloudscapeFeatureProcessor::Simulate(const SimulatePacket&)
+    void CloudscapeFeatureProcessor::Render(const RenderPacket& renderPacket)
     {
-        if (m_cloudscapeComputePass)
+        // Update the frame counter for the compute and render passes if required.
+        for (const auto& renderPipeline : m_renderPipelineToIndexMap)
         {
-            m_cloudscapeComputePass->UpdateFrameCounter(m_frameCounter);
+            const auto& [pipeline, index] = renderPipeline;
+            if (pipeline)
+            {
+                if (pipeline->NeedsRender())
+                {
+                    if (m_cloudscapeComputePasses[index])
+                    {
+                        uint32_t pixelIndex = m_cloudscapeComputePasses[index]->GetPixelIndex();
+                        pixelIndex++;
+                        m_cloudscapeComputePasses[index]->UpdateFrameCounter(pixelIndex);
 
-            const auto& passSrg = m_cloudscapeReprojectionPass->GetShaderResourceGroup();
-            const uint32_t pixelIndex4x4 = m_frameCounter % 16;
-            passSrg->SetConstant(m_pixelIndex4x4Index, pixelIndex4x4);
+                        const auto& passSrg = m_cloudscapeReprojectionPasses[index]->GetShaderResourceGroup();
+                        const uint32_t pixelIndex4x4 = pixelIndex % 16;
+                        passSrg->SetConstant(m_pixelIndex4x4Index, pixelIndex4x4);
 
-            m_cloudscapeRenderPass->UpdateFrameCounter(m_frameCounter);
-            
-            m_frameCounter++;
+                        m_cloudscapeRenderPasses[index]->UpdateFrameCounter(pixelIndex);
+                    }
+                }
+            }
         }
     }
 
     void CloudscapeFeatureProcessor::AddRenderPasses([[maybe_unused]] AZ::RPI::RenderPipeline* renderPipeline)
     {
+        // Extract the image size from the first attachment of the render pipeline.
+        auto renderRootPass = renderPipeline->GetRootPass();
+        if (!renderRootPass)
+        {
+            return;
+        }
+        AZ::RPI::PassAttachmentBinding rootBinding;
+        if (renderRootPass->GetInputOutputCount() != 0)
+        {
+            rootBinding = renderRootPass->GetInputOutputBinding(0);
+        }
+        else if (renderRootPass->GetOutputCount() != 0)
+        {
+            rootBinding = renderRootPass->GetOutputBinding(0);
+        }
+        else
+        {
+            return;
+        }
+
+        auto rootAttachment = rootBinding.GetAttachment();
+        if (!rootAttachment)
+        {
+            return;
+        }
+
+        if (rootAttachment->GetAttachmentType() != AZ::RHI::AttachmentType::Image)
+        {
+            return;
+        }
+        auto attachmentImageDesc = rootAttachment->GetTransientImageDescriptor();
+        [[maybe_unused]] auto imageSize = attachmentImageDesc.m_imageDescriptor.m_size;
+
+        uint32_t width = imageSize.m_width;
+        uint32_t height = imageSize.m_height;
+
+        // Add render pipeline to the map to check later if the frame counter needs to be updated.
+        m_renderPipelineToIndexMap[renderPipeline] = m_cloudscapeComputePasses.size();
+
+        // Create a pair of output textures used for the modified pipeline..
+        m_cloudOutputPairs.push_back({ CreateCloudscapeOutputAttachment(AZ::Name("CloudscapeOutput0"), { width, height }),
+                                       CreateCloudscapeOutputAttachment(AZ::Name("CloudscapeOutput1"), { width, height }) });
+
+        // Create a index value for the passes.
+        const uint32_t passIndex = m_cloudscapeComputePasses.size();
+
         // Get the pass requests to create passes from the asset
         AddPassRequestToRenderPipeline(renderPipeline, "Passes/CloudscapeComputePassRequest.azasset", "DepthPrePass", false /*before*/);
         // Hold a reference to the compute pass
@@ -89,34 +142,37 @@ namespace VolumetricClouds
             const auto passName = AZ::Name("CloudscapeComputePass");
             AZ::RPI::PassFilter passFilter = AZ::RPI::PassFilter::CreateWithPassName(passName, renderPipeline);
             AZ::RPI::Pass* existingPass = AZ::RPI::PassSystemInterface::Get()->FindFirstPass(passFilter);
-            m_cloudscapeComputePass = azrtti_cast<CloudscapeComputePass*>(existingPass);
-            if (!m_cloudscapeComputePass)
+            m_cloudscapeComputePasses.push_back(azrtti_cast<CloudscapeComputePass*>(existingPass));
+
+            if (!m_cloudscapeComputePasses.back())
             {
                 AZ_Error(LogName, false, "%s Failed to find as RenderPass: %s", __FUNCTION__, passName.GetCStr());
                 return;
             }
 
+            m_cloudscapeComputePasses.back()->SetPassIndex(passIndex);
+
             if (m_shaderConstantData)
             {
-                m_cloudscapeComputePass->UpdateShaderConstantData(*m_shaderConstantData);
+                m_cloudscapeComputePasses.back()->UpdateShaderConstantData(*m_shaderConstantData);
             }
         }
 
-        AddPassRequestToRenderPipeline(renderPipeline, "Passes/CloudscapeReprojectionComputePassRequest.azasset", "MotionVectorPass", false /*before*/);
+        AddPassRequestToRenderPipeline(
+            renderPipeline, "Passes/CloudscapeReprojectionComputePassRequest.azasset", "MotionVectorPass", false /*before*/);
         // Hold a reference to the compute pass
         {
             const auto passName = AZ::Name("CloudscapeReprojectionComputePass");
             AZ::RPI::PassFilter passFilter = AZ::RPI::PassFilter::CreateWithPassName(passName, renderPipeline);
             AZ::RPI::Pass* existingPass = AZ::RPI::PassSystemInterface::Get()->FindFirstPass(passFilter);
-            m_cloudscapeReprojectionPass = azrtti_cast<AZ::RPI::ComputePass*>(existingPass);
-            if (!m_cloudscapeReprojectionPass)
+            m_cloudscapeReprojectionPasses.push_back(azrtti_cast<AZ::RPI::ComputePass*>(existingPass));
+            if (!m_cloudscapeReprojectionPasses.back())
             {
                 AZ_Error(LogName, false, "%s Failed to find as RenderPass: %s", __FUNCTION__, passName.GetCStr());
                 return;
             }
-            m_cloudscapeReprojectionPass->SetTargetThreadCounts(m_viewportSize.m_width, m_viewportSize.m_height, 1);
+            m_cloudscapeReprojectionPasses.back()->SetTargetThreadCounts(width, height, 1);
         }
-
 
         AddPassRequestToRenderPipeline(renderPipeline, "Passes/CloudscapeRenderPassRequest.azasset", "TransparentPass", true /*before*/);
         // Hold a reference to the render pass
@@ -124,34 +180,33 @@ namespace VolumetricClouds
             const auto passName = AZ::Name("CloudscapeRenderPass");
             AZ::RPI::PassFilter passFilter = AZ::RPI::PassFilter::CreateWithPassName(passName, renderPipeline);
             AZ::RPI::Pass* existingPass = AZ::RPI::PassSystemInterface::Get()->FindFirstPass(passFilter);
-            m_cloudscapeRenderPass = azrtti_cast<CloudscapeRenderPass*>(existingPass);
-            if (!m_cloudscapeRenderPass)
+            m_cloudscapeRenderPasses.push_back(azrtti_cast<CloudscapeRenderPass*>(existingPass));
+            if (!m_cloudscapeRenderPasses.back())
             {
                 AZ_Error(LogName, false, "%s Failed to find as RenderPass: %s", __FUNCTION__, passName.GetCStr());
                 return;
             }
         }
-
     }
-
     //! AZ::RPI::FeatureProcessor overrides END ...
     /////////////////////////////////////////////////////////////////////////////
-
 
     /////////////////////////////////////////////////////////////////////
     //! Functions called by CloudscapeComponentController START
     void CloudscapeFeatureProcessor::UpdateShaderConstantData(const CloudscapeShaderConstantData& shaderData)
     {
         m_shaderConstantData = &shaderData;
-        if (m_cloudscapeComputePass)
+        for (unsigned int i = 0; i < m_cloudscapeComputePasses.size(); i++)
         {
-            m_cloudscapeComputePass->UpdateShaderConstantData(shaderData);
+            if (m_cloudscapeComputePasses[i])
+            {
+                m_cloudscapeComputePasses[i]->UpdateShaderConstantData(shaderData);
+            }
         }
     }
 
     //! Functions called by CloudscapeComponentController END
     /////////////////////////////////////////////////////////////////////
-
 
     void CloudscapeFeatureProcessor::ActivateInternal()
     {
@@ -159,18 +214,12 @@ namespace VolumetricClouds
         auto viewportContext = viewportContextInterface->GetViewportContextByScene(GetParentScene());
         m_viewportSize = viewportContext->GetViewportSize();
 
-        m_cloudOutput0 = CreateCloudscapeOutputAttachment(AZ::Name("CloudscapeOutput0"), m_viewportSize);
-        AZ_Assert(!!m_cloudOutput0, "Failed to create CloudscapeOutput0");
-        m_cloudOutput1 = CreateCloudscapeOutputAttachment(AZ::Name("CloudscapeOutput1"), m_viewportSize);
-        AZ_Assert(!!m_cloudOutput1, "Failed to create CloudscapeOutput1");
-
         DisableSceneNotification();
         EnableSceneNotification();
     }
 
-
-    AZ::Data::Instance<AZ::RPI::AttachmentImage> CloudscapeFeatureProcessor::CreateCloudscapeOutputAttachment(const AZ::Name& attachmentName
-        , const AzFramework::WindowSize attachmentSize) const
+    AZ::Data::Instance<AZ::RPI::AttachmentImage> CloudscapeFeatureProcessor::CreateCloudscapeOutputAttachment(
+        const AZ::Name& attachmentName, const AzFramework::WindowSize attachmentSize) const
     {
         AZ::RHI::ImageDescriptor imageDesc = AZ::RHI::ImageDescriptor::Create2D(
             AZ::RHI::ImageBindFlags::ShaderReadWrite, attachmentSize.m_width, attachmentSize.m_height, AZ::RHI::Format::R8G8B8A8_UNORM);
