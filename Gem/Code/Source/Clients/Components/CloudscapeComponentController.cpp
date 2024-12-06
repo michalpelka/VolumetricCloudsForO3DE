@@ -236,8 +236,14 @@ namespace VolumetricClouds
             EnableFeatureProcessor();
 
             auto viewportContextInterface = AZ::Interface<AZ::RPI::ViewportContextRequestsInterface>::Get();
-            auto viewportContext = viewportContextInterface->GetViewportContextByScene(m_scene);
-            AZ::RPI::ViewportContextIdNotificationBus::Handler::BusConnect(viewportContext->GetId());
+            if (viewportContextInterface)
+            {
+                auto viewportContext = viewportContextInterface->GetViewportContextByScene(m_scene);
+                if (viewportContext)
+                {
+                    AZ::RPI::ViewportContextIdNotificationBus::Handler::BusConnect(viewportContext->GetId());
+                }
+            }
 
             m_sunLightIntensity = m_configuration.m_shaderConstantData.m_sunLightIntensity;
         }
@@ -250,7 +256,10 @@ namespace VolumetricClouds
             }
 
             VolumetricCloudsRequestBus::Handler::BusDisconnect();
-            AZ::RPI::ViewportContextIdNotificationBus::Handler::BusDisconnect();
+            if (AZ::RPI::ViewportContextIdNotificationBus::Handler::BusIsConnected())
+            {
+                AZ::RPI::ViewportContextIdNotificationBus::Handler::BusDisconnect();
+            }
             m_directionalLightConfigChangedEventHandler.Disconnect();
             AZ::TransformNotificationBus::Handler::BusDisconnect();
             AZ::Data::AssetBus::Handler::BusDisconnect();

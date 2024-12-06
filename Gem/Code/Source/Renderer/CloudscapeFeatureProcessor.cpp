@@ -156,8 +156,14 @@ namespace VolumetricClouds
     void CloudscapeFeatureProcessor::ActivateInternal()
     {
         auto viewportContextInterface = AZ::Interface<AZ::RPI::ViewportContextRequestsInterface>::Get();
-        auto viewportContext = viewportContextInterface->GetViewportContextByScene(GetParentScene());
-        m_viewportSize = viewportContext->GetViewportSize();
+        if (viewportContextInterface) 
+        {
+            auto viewportContext = viewportContextInterface->GetViewportContextByScene(GetParentScene());
+            if (viewportContext) 
+            {
+                m_viewportSize = viewportContext->GetViewportSize();
+            }
+        }
 
         m_cloudOutput0 = CreateCloudscapeOutputAttachment(AZ::Name("CloudscapeOutput0"), m_viewportSize);
         AZ_Assert(!!m_cloudOutput0, "Failed to create CloudscapeOutput0");
